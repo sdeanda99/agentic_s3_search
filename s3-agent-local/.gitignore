@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# AWS
+.aws/
+
+# Testing
+.pytest_cache/
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
