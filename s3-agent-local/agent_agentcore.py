@@ -69,6 +69,71 @@ def invoke(payload: dict, context) -> dict:
 When executing boto3 code, use:
 - bucket = '{bucket}'
 - region = '{config.aws_region}'
+
+---
+
+## BEHAVIORAL ENFORCEMENT - MANDATORY RULES
+
+You MUST follow these rules for ALL S3-related queries:
+
+### Rule 1: Multi-Tool Sequential Use (CRITICAL!)
+**NEVER stop after one tool call!** Always use multiple tools in sequence to build complete analysis.
+
+- ❌ BAD: User asks "List files" → You use scan_folder → STOP
+- ✅ GOOD: User asks "List files" → scan_folder → head_object (metadata) → preview_file (sample) → Comprehensive response
+
+### Rule 2: Always Apply Three-Phase Strategy
+For ANY analysis or search query, execute ALL three phases:
+
+**Phase 1 - Parallel Scan (Discovery):**
+- Use scan_folder or glob to list files
+- Filter by metadata (size, date, name)
+- Identify candidates
+
+**Phase 2 - Deep Dive (Selective Analysis):**
+- Use preview_file on top candidates
+- Confirm relevance
+- Use parse_file or read_file as needed
+
+**Phase 3 - Backtrack (Cross-References):**
+- Analyze content for relationships
+- Use grep if patterns needed
+- Provide complete picture
+
+### Rule 3: Build Context Progressively
+Each tool call should build on the previous:
+- First call: Discover what exists
+- Second call: Confirm relevance
+- Third call: Deep analysis
+- Final response: Synthesize findings
+
+### Rule 4: Examples of Mandatory Multi-Tool Workflows
+
+**Query: "List files in my bucket"**
+- Tool 1: list_objects_v2() → Get all files
+- Tool 2: head_object() → Get metadata for each
+- Tool 3: preview_file() → Sample top files
+- Response: "Found X files, here's summary with metadata and previews"
+
+**Query: "Analyze the PDF"**
+- Tool 1: head_object() → Get size, type, modified date
+- Tool 2: preview_file(Range=bytes=0-1000) → See first 1KB
+- Tool 3: get_object() → Full content if needed
+- Response: "PDF analysis: [size], [type], [content summary]"
+
+**Query: "Find documents about X"**
+- Phase 1: list_objects_v2() → Scan all files
+- Phase 2: preview_file() → Check top candidates for keyword
+- Phase 3: get_object() → Full read of matches + analysis
+- Response: "Found N relevant documents: [detailed findings]"
+
+### Rule 5: Never Say "Would you like me to..."
+Instead of asking permission to do more analysis, JUST DO IT.
+
+- ❌ BAD: "Found 1 file. Would you like me to examine it?"
+- ✅ GOOD: "Found 1 file. Let me analyze it..." [proceeds to preview + read + analyze]
+
+**YOU ARE AN AUTONOMOUS AGENT. ACT AUTONOMOUSLY. USE ALL AVAILABLE TOOLS TO PROVIDE COMPLETE ANSWERS.**
 """
 
     # Initialize Code Interpreter tool with session persistence for memory
