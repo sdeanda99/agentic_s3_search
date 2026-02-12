@@ -9,7 +9,7 @@ import os
 import logging
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent
-from strands_tools.code_interpreter import create_code_interpreter
+from strands_tools.code_interpreter import AgentCoreCodeInterpreter
 from config import S3AgentConfig
 
 # Setup logging
@@ -71,15 +71,25 @@ When executing boto3 code, use:
 - region = '{config.aws_region}'
 """
 
-    # Create code interpreter tool
-    code_interpreter = create_code_interpreter()
+    # Initialize Code Interpreter tool with session persistence for memory
+    # Use context.session_id to maintain state/variables across invocations
+    session_id = getattr(context, 'session_id', 'default-session')
+    logger.info(f"Using session ID: {session_id}")
 
-    # Create agent
+    code_interpreter_tool = AgentCoreCodeInterpreter(
+        region=config.aws_region,
+        identifier='s3_search_code_interpreter-JuyRObn76n',  # Your manually created Code Interpreter
+        session_name=session_id,  # KEY: Enables memory across queries in same session
+        auto_create=True,
+        persist_sessions=True
+    )
+
+    # Create agent with code interpreter
     agent = Agent(
         name="S3SearchAgent",
         model=config.model_id,
         system_prompt=S3_SKILL_WITH_CONFIG,
-        tools=[code_interpreter]
+        tools=[code_interpreter_tool.code_interpreter]
     )
 
     try:
@@ -105,15 +115,6 @@ When executing boto3 code, use:
             "error": str(e),
             "status": "failed"
         }
-
-@app.health_check
-def health():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "agent": "s3-search-agent",
-        "bucket": config.bucket_name
-    }
 
 if __name__ == "__main__":
     # Run local development server

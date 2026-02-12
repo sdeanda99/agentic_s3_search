@@ -6,7 +6,7 @@ Run: python agent_strands.py
 """
 import os
 from strands import Agent
-from strands_tools.code_interpreter import create_code_interpreter
+from strands_tools.code_interpreter import AgentCoreCodeInterpreter
 from config import S3AgentConfig
 
 # Load configuration
@@ -34,15 +34,22 @@ When executing boto3 code, use:
 - region = '{config.aws_region}'
 """
 
-# Create code interpreter tool
-code_interpreter = create_code_interpreter()
+# Initialize Code Interpreter tool with persistent session
+# This enables memory across queries in the same interactive session
+code_interpreter_tool = AgentCoreCodeInterpreter(
+    region=config.aws_region,
+    identifier='s3_search_code_interpreter-JuyRObn76n',  # Your manually created Code Interpreter
+    session_name='interactive-cli-session',  # Persistent session for memory
+    auto_create=True,
+    persist_sessions=True
+)
 
-# Create agent
+# Create agent with code interpreter
 agent = Agent(
     name="S3SearchAgent",
     model=config.model_id,
     system_prompt=S3_SKILL_WITH_CONFIG,
-    tools=[code_interpreter]
+    tools=[code_interpreter_tool.code_interpreter]  # Official pattern from AWS docs
 )
 
 def main():

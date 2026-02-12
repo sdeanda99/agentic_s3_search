@@ -102,11 +102,20 @@ agentcore dev
 
 **Terminal 2:**
 ```bash
-# Test queries
-agentcore invoke --dev '{"prompt": "List all files in my S3 bucket"}'
-agentcore invoke --dev '{"prompt": "Show files in test-documents/"}'
-agentcore invoke --dev '{"prompt": "Get PDF metadata"}'
+# Test queries with SESSION ID for memory
+SESSION="my-test-session-001"
+
+agentcore invoke --dev '{"prompt": "List all files in my S3 bucket"}' --session-id $SESSION
+agentcore invoke --dev '{"prompt": "Show files in test-documents/"}' --session-id $SESSION
+agentcore invoke --dev '{"prompt": "Get PDF metadata"}' --session-id $SESSION
+agentcore invoke --dev '{"prompt": "What was the PDF size?"}' --session-id $SESSION
+# ^ Agent remembers! Same session = persistent memory
+
+# Test three-phase strategy
+agentcore invoke --dev '{"prompt": "Find and analyze all documents in my bucket"}' --session-id $SESSION
 ```
+
+**Key:** Use same `--session-id` to enable memory across queries!
 
 ---
 

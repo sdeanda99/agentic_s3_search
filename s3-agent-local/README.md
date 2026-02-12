@@ -4,6 +4,9 @@ Skill-powered agentic S3 search agent for local development and testing.
 
 ## Features
 
+- **Three-Phase Search Strategy** - Scan → Deep Dive → Backtrack (from agentic-file-search research)
+- **Session Persistence** - Agent remembers context across queries
+- **Multi-Tool Sequential Use** - Agent chains tools for comprehensive analysis
 - Code execution tool for running boto3 operations
 - S3 interaction skill with 9 boto3 operations
 - Hybrid skill approach (works with Claude and other AWS models)
@@ -48,14 +51,24 @@ ENV=local
 python agent_strands.py
 ```
 
-**Interactive mode:**
+**Interactive mode with memory:**
 ```
 > List all files in my S3 bucket
 > Show me files in test-documents/ folder
 > Get metadata for the PDF file
+> What was the file size again? (Agent remembers!)
 > Preview the first 500 bytes
 > quit
 ```
+
+**Test Three-Phase Strategy:**
+```
+> Find and analyze all PDF documents in my bucket
+```
+Agent will automatically:
+1. **Phase 1:** Scan bucket, filter to PDFs
+2. **Phase 2:** Preview top candidates
+3. **Phase 3:** Full analysis with cross-references
 
 ### 5. Run AgentCore Dev Mode (Hot Reload)
 
@@ -63,14 +76,25 @@ python agent_strands.py
 agentcore dev
 ```
 
-**In another terminal:**
+**In another terminal (with session memory):**
 ```bash
-agentcore invoke --dev '{"prompt": "List all files in my S3 bucket"}'
-agentcore invoke --dev '{"prompt": "Show metadata for the PDF in test-documents/"}'
-agentcore invoke --dev '{"prompt": "Preview first 1KB of the PDF file"}'
+SESSION="my-session-001"
+
+agentcore invoke --dev '{"prompt": "List all files in my S3 bucket"}' --session-id $SESSION
+agentcore invoke --dev '{"prompt": "Show metadata for the PDF in test-documents/"}' --session-id $SESSION
+agentcore invoke --dev '{"prompt": "What was the PDF size?"}' --session-id $SESSION
+# ^ Remembers from previous query!
 ```
 
-**Edit files and they auto-reload!**
+**Test Three-Phase Strategy:**
+```bash
+agentcore invoke --dev '{"prompt": "Find and analyze all documents in my bucket"}' --session-id $SESSION
+```
+
+**Features:**
+- **Hot Reload:** Edit files, auto-reload instantly
+- **Session Memory:** Same --session-id = agent remembers context
+- **Multi-Tool Chains:** Agent uses multiple tools sequentially
 
 ---
 
