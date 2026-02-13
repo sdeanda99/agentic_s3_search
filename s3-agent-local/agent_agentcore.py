@@ -49,14 +49,26 @@ def invoke(payload: dict, context) -> dict:
     logger.info(f"Processing query: {user_prompt[:100]}...")
     logger.info(f"Using bucket: {bucket}")
 
-    # Load S3 skill
-    skill_path = os.path.join(os.path.dirname(__file__), 'skills', 's3_interaction.md')
-    with open(skill_path, 'r') as f:
+    # Load BOTH skills: S3 interaction + Legal contract review
+    skills_dir = os.path.join(os.path.dirname(__file__), 'skills')
+
+    with open(os.path.join(skills_dir, 's3_interaction.md'), 'r') as f:
         S3_SKILL = f.read()
 
-    # Inject configuration
-    S3_SKILL_WITH_CONFIG = f"""
+    with open(os.path.join(skills_dir, 'legal_contract_review.md'), 'r') as f:
+        LEGAL_SKILL = f.read()
+
+    # Combine both skills with configuration
+    COMBINED_SKILLS = f"""
+# SKILL 1: S3 Interaction
+
 {S3_SKILL}
+
+---
+
+# SKILL 2: Legal Contract Review
+
+{LEGAL_SKILL}
 
 ---
 
@@ -134,6 +146,37 @@ Instead of asking permission to do more analysis, JUST DO IT.
 - ✅ GOOD: "Found 1 file. Let me analyze it..." [proceeds to preview + read + analyze]
 
 **YOU ARE AN AUTONOMOUS AGENT. ACT AUTONOMOUSLY. USE ALL AVAILABLE TOOLS TO PROVIDE COMPLETE ANSWERS.**
+
+---
+
+## YOUR COMBINED CAPABILITIES
+
+You are a **Paralegal AI Assistant** with dual expertise:
+
+1. **S3 Document Search** - Find and access documents in S3 buckets
+2. **Legal Contract Analysis** - Review contracts using legal frameworks
+
+### Integrated Workflow
+
+When user asks to analyze legal documents:
+
+**Step 1:** Use S3 tools to find contracts
+- scan_folder, glob, grep to locate files
+
+**Step 2:** Read contract content
+- preview_file to sample, read_file for full content
+
+**Step 3:** Apply legal analysis
+- Identify clause types
+- Classify risk (GREEN/YELLOW/RED)
+- Generate redlines with priority tiers
+
+**Step 4:** Provide comprehensive report
+- Executive summary
+- Clause-by-clause analysis
+- Actionable recommendations
+
+**Example:** "Review vendor contracts in S3" → Find files → Read each → Legal analysis → Consolidated report with risk assessment
 """
 
     # Initialize Code Interpreter tool with session persistence for memory
@@ -149,11 +192,11 @@ Instead of asking permission to do more analysis, JUST DO IT.
         persist_sessions=True
     )
 
-    # Create agent with code interpreter
+    # Create agent with combined S3 + Legal skills
     agent = Agent(
-        name="S3SearchAgent",
+        name="ParalegalS3Agent",
         model=config.model_id,
-        system_prompt=S3_SKILL_WITH_CONFIG,
+        system_prompt=COMBINED_SKILLS,
         tools=[code_interpreter_tool.code_interpreter]
     )
 

@@ -12,14 +12,26 @@ from config import S3AgentConfig
 # Load configuration
 config = S3AgentConfig.from_env()
 
-# Load S3 interaction skill
-SKILL_PATH = os.path.join(os.path.dirname(__file__), 'skills', 's3_interaction.md')
-with open(SKILL_PATH, 'r') as f:
+# Load BOTH skills: S3 interaction + Legal contract review
+SKILLS_DIR = os.path.join(os.path.dirname(__file__), 'skills')
+
+with open(os.path.join(SKILLS_DIR, 's3_interaction.md'), 'r') as f:
     S3_SKILL = f.read()
 
-# Inject configuration into skill
-S3_SKILL_WITH_CONFIG = f"""
+with open(os.path.join(SKILLS_DIR, 'legal_contract_review.md'), 'r') as f:
+    LEGAL_SKILL = f.read()
+
+# Combine both skills with configuration
+COMBINED_SKILLS = f"""
+# SKILL 1: S3 Interaction
+
 {S3_SKILL}
+
+---
+
+# SKILL 2: Legal Contract Review
+
+{LEGAL_SKILL}
 
 ---
 
@@ -61,6 +73,26 @@ Always provide comprehensive responses:
 - Analyze document → ALSO provide summary and key findings
 
 **YOU ARE AN AUTONOMOUS AGENT. USE ALL TOOLS NEEDED TO GIVE COMPLETE ANSWERS.**
+
+---
+
+## YOUR COMBINED CAPABILITIES
+
+You are a **Paralegal AI Assistant** with dual expertise:
+
+1. **S3 Document Search** - Find and access documents in S3 buckets
+2. **Legal Contract Analysis** - Review contracts using legal frameworks
+
+### Integrated Workflow for Legal Document Analysis
+
+When user asks to analyze legal documents:
+
+1. Use S3 tools to find contracts (scan_folder, glob)
+2. Read contract content (preview_file, read_file)
+3. Apply legal methodology (clause analysis, risk classification)
+4. Generate comprehensive report (GREEN/YELLOW/RED, redlines, priorities)
+
+**Example:** "Review the contract in my S3 bucket" → Find → Read → Legal Analysis → Report with risk assessment
 """
 
 # Initialize Code Interpreter tool with persistent session
@@ -73,12 +105,12 @@ code_interpreter_tool = AgentCoreCodeInterpreter(
     persist_sessions=True
 )
 
-# Create agent with code interpreter
+# Create agent with combined S3 + Legal skills
 agent = Agent(
-    name="S3SearchAgent",
+    name="ParalegalS3Agent",
     model=config.model_id,
-    system_prompt=S3_SKILL_WITH_CONFIG,
-    tools=[code_interpreter_tool.code_interpreter]  # Official pattern from AWS docs
+    system_prompt=COMBINED_SKILLS,
+    tools=[code_interpreter_tool.code_interpreter]
 )
 
 def main():
